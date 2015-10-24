@@ -1,0 +1,3 @@
+include ':live4danmaku', ':sample'
+include ':'
+rootProject.name = 'Live4Danmaku'
