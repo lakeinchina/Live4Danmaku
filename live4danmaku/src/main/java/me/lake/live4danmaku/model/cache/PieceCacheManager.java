@@ -1,7 +1,7 @@
 package me.lake.live4danmaku.model.cache;
 
 import android.graphics.Bitmap;
-import android.util.Size;
+import me.lake.live4danmaku.model.others.Size;
 
 /**
  * Created by Lakeinchina(lakeinchina@hotmail.com) on 2015/10/23.
@@ -52,5 +52,10 @@ public class PieceCacheManager implements ICacheManager {
         if (cache.getBitmap() != null) {
             cache.getBitmap().recycle();
         }
+    }
+
+    @Override
+    public BitmapClip getBitmapClipByCacheId(int id) {
+        return null;
     }
 }

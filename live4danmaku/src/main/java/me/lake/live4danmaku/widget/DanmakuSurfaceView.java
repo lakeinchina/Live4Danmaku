@@ -1,5 +1,6 @@
 package me.lake.live4danmaku.widget;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -24,30 +25,34 @@ import me.lake.live4danmaku.core.IDanmakuControler;
 import me.lake.live4danmaku.core.IDanmakuDisplayer;
 import me.lake.live4danmaku.core.NoCacheDanmakuDisplayer;
 import me.lake.live4danmaku.core.SimpleDanmakuControler;
+import me.lake.live4danmaku.core.StandardDanmakuDisplayer;
 import me.lake.live4danmaku.model.Timepiece.ITimepiece;
 import me.lake.live4danmaku.model.Timepiece.UnixTimepiece;
+import me.lake.live4danmaku.model.cache.ICacheManager;
+import me.lake.live4danmaku.model.cache.PieceCacheManager;
 import me.lake.live4danmaku.model.danmaku.BaseDanmaku;
 import me.lake.live4danmaku.model.danmaku.DanmakuTimeComparator;
+import me.lake.live4danmaku.model.danmaku.drawdanmaku.StaticDrawDanmaku;
 import me.lake.live4danmaku.tools.DanmakuLog;
 import me.lake.live4danmaku.tools.FPSTools;
 
 /**
  * Created by Lakeinchina(lakeinchina@hotmail.com) on 2015/10/23.
  * Live4Danmaku Project
- *
+ * <p/>
  * Copyright (C) 2015 Po Hu <lakeinchina@hotmail.com>
- *
- *   Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
+ * <p/>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 public class DanmakuSurfaceView extends SurfaceView implements android.view.SurfaceHolder.Callback {
 
@@ -66,15 +71,9 @@ public class DanmakuSurfaceView extends SurfaceView implements android.view.Surf
         init();
     }
 
-    public DanmakuSurfaceView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
-        super(context, attrs, defStyleAttr, defStyleRes);
-        init();
-    }
-
     private SurfaceHolder surfaceHolder;
     private TreeSet<BaseDanmaku> prepareingDanmakus;
     private LinkedList<BaseDanmaku> displayingDanmakus;
-    private LinkedList<BaseDanmaku> destroyingDanmakus;
     private HandlerThread drawThread;
     private DrawHandler drawHandler;
     private HandlerThread prepareThread;
@@ -82,6 +81,7 @@ public class DanmakuSurfaceView extends SurfaceView implements android.view.Surf
     private ITimepiece timepiece;
     private IDanmakuDisplayer danmakuDisplayer;
     private IDanmakuControler danmakuControler;
+    private ICacheManager cacheManager;
     private int width;
     private int height;
     private int maxFPS = FPS_STANDARD;
@@ -101,7 +101,6 @@ public class DanmakuSurfaceView extends SurfaceView implements android.view.Surf
             this.setWillNotDraw(true);
             prepareingDanmakus = new TreeSet<BaseDanmaku>(new DanmakuTimeComparator());
             displayingDanmakus = new LinkedList<BaseDanmaku>();
-            destroyingDanmakus = new LinkedList<BaseDanmaku>();
             prepareThread = new HandlerThread("DanmakuPrepareThread", Process.THREAD_PRIORITY_LESS_FAVORABLE);
             prepareThread.start();
             drawThread = new HandlerThread("DanmakuDrawThread", android.os.Process.THREAD_PRIORITY_DEFAULT);
@@ -214,9 +213,8 @@ public class DanmakuSurfaceView extends SurfaceView implements android.view.Surf
         public void handleMessage(Message msg) {
             switch (msg.what) {
                 case WHAT_INIT:
-//                    danmakuDisplayer = new StandardDanmakuDisplayer(new PieceCacheManager(1024 * 1024));
-//                    danmakuControler = new StandardDanmakuControler();
-                    danmakuDisplayer = new NoCacheDanmakuDisplayer();
+                    cacheManager = new PieceCacheManager(1024 * 1024);
+                    danmakuDisplayer = new StandardDanmakuDisplayer(cacheManager);
                     danmakuControler = new SimpleDanmakuControler();
                     danmakuControler.setDisplayRegion(0f, 0.5f);
                     sendEmptyMessage(WHAT_UPDATE);
@@ -224,7 +222,6 @@ public class DanmakuSurfaceView extends SurfaceView implements android.view.Surf
                     break;
                 case WHAT_UPDATE:
                     long inTime = System.currentTimeMillis();
-                    DanmakuLog.debug("WHAT_UPDATE");
                     //绘制弹幕
                     if (displayingDanmakus.size() == 0) {
                         noneDanmakusFlag--;
@@ -251,6 +248,8 @@ public class DanmakuSurfaceView extends SurfaceView implements android.view.Surf
                             for (BaseDanmaku baseDanmaku : destroyDanmakus) {
                                 try {
                                     baseDanmaku.onDisappear();
+                                    if (baseDanmaku instanceof StaticDrawDanmaku)
+                                        cacheManager.releaseCache((((StaticDrawDanmaku) baseDanmaku).getDrawCache()));
                                 } catch (Exception e) {
                                     DanmakuLog.trace("CHECK_DESTROY,onDisappear", e);
                                 }

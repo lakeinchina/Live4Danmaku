@@ -1,13 +1,7 @@
-package me.lake.live4danmaku.model.cache;
-
-
-import android.graphics.Bitmap;
-
-import me.lake.live4danmaku.model.others.Position;
-import me.lake.live4danmaku.model.others.Size;
+package me.lake.live4danmaku.model.others;
 
 /**
- * Created by Lakeinchina(lakeinchina@hotmail.com) on 2015/10/20.
+ * Created by Lakeinchina(lakeinchina@hotmail.com) on 2015/10/24.
  * Live4Danmaku Project
  *
  * Copyright (C) 2015 Po Hu <lakeinchina@hotmail.com>
@@ -24,17 +18,28 @@ import me.lake.live4danmaku.model.others.Size;
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-public interface ICacheManager {
+public class Size {
+    private int width;
+    private int height;
 
-    public Cache requireCache(Size size);
+    public Size(int width, int height) {
+        this.width = width;
+        this.height = height;
+    }
 
-    public void releaseCache(Cache cache);
+    public int getWidth() {
+        return width;
+    }
 
-    public BitmapClip getBitmapClipByCacheId(int id);
+    public void setWidth(int width) {
+        this.width = width;
+    }
 
-    public class BitmapClip {
-        public Position pos;
-        public Size size;
-        public Bitmap bitmap;
+    public int getHeight() {
+        return height;
+    }
+
+    public void setHeight(int height) {
+        this.height = height;
     }
 }
